@@ -2,7 +2,10 @@ import type { ExtensionFileSide, ExtensionFileView } from 'hunkdiff/extension';
 
 import type { ViewedStore } from './createViewedStore.ts';
 import buildFoldedLayout from './utils/buildFoldedLayout.ts';
-import collectSourceRanges from './utils/collectSourceRanges.ts';
+import collectSourceRanges, {
+  type SourceLineCounts,
+} from './utils/collectSourceRanges.ts';
+import countSourceLines from './utils/countSourceLines.ts';
 
 export const VIEWED_VIEW_ID = 'viewed';
 
@@ -34,12 +37,17 @@ const createViewedFileView = (
     const documents = await Promise.all(
       SIDES.map((side) => input.readDocument(side)),
     );
-    const readableSides = new Set(
-      SIDES.filter((_, index) => typeof documents[index] === 'string'),
+    const lineCounts: SourceLineCounts = Object.fromEntries(
+      SIDES.flatMap((side, index) => {
+        const source = documents[index];
+        return typeof source === 'string'
+          ? [[side, countSourceLines(source)]]
+          : [];
+      }),
     );
     return buildFoldedLayout(
       hunks.length,
-      collectSourceRanges(hunks, readableSides),
+      collectSourceRanges(hunks, lineCounts),
     );
   },
 });

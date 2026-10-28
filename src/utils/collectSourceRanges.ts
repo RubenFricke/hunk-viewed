@@ -6,30 +6,37 @@ import type {
 
 const SIDES = ['old', 'new'] as const satisfies readonly ExtensionFileSide[];
 
+/** The number of source lines of each side that Hunk can read. */
+export type SourceLineCounts = Readonly<
+  Partial<Record<ExtensionFileSide, number>>
+>;
+
 /**
- * Lists the source lines of every hunk, on the sides that Hunk can read.
+ * Lists the source lines to bind the folded row to: the lines of every hunk,
+ * then every line of the file, on the sides that Hunk can read.
  *
  * @remarks
- *   Binding the folded row to these lines makes it a stop for `j` and `k`, and
- *   lets a note anywhere in the file show under it instead of unfolding the
- *   file. Hunk reads every bound side to check the lines, so a side it cannot
- *   read, such as the commit pointer of a submodule, must stay unbound. A side
- *   that the file does not have, as in a new file, has a span like `[0, 0]` and
- *   is left out too.
+ *   Binding the row makes it a stop for `j` and `k`. Hunk names that stop after
+ *   the first range, so the hunks come first. Binding every line lets each note
+ *   show under the row, also a note whose lines moved in a reload; an unbound
+ *   note makes Hunk show the raw diff instead. Hunk allows ranges in one row to
+ *   overlap. A side without a line count, such as the commit pointer of a
+ *   submodule, stays unbound. Spans that cover no lines, like `[0, 0]` for the
+ *   missing side of a new file, are left out.
  * @param hunks - The parsed hunks of the file.
- * @param readableSides - The sides whose source Hunk can read.
- * @returns One range per hunk and readable side.
+ * @param lineCounts - The line count of each side that Hunk can read.
+ * @returns The ranges, hunks first.
  */
 const collectSourceRanges = (
   hunks: readonly ExtensionDiffHunk[],
-  readableSides: ReadonlySet<ExtensionFileSide>,
-): ExtensionFileViewSourceRange[] =>
-  hunks.flatMap((hunk) =>
+  lineCounts: SourceLineCounts,
+): ExtensionFileViewSourceRange[] => {
+  const hunkRanges = hunks.flatMap((hunk) =>
     SIDES.flatMap((side) => {
       const range = side === 'old' ? hunk.oldRange : hunk.newRange;
       if (
         !range ||
-        !readableSides.has(side) ||
+        lineCounts[side] === undefined ||
         range[0] < 1 ||
         range[0] > range[1]
       ) {
@@ -38,5 +45,13 @@ const collectSourceRanges = (
       return [{ side, range: [range[0], range[1]] as const }];
     }),
   );
+  const fileRanges = SIDES.flatMap((side) => {
+    const lineCount = lineCounts[side];
+    return lineCount === undefined || lineCount < 1
+      ? []
+      : [{ side, range: [1, lineCount] as const }];
+  });
+  return [...hunkRanges, ...fileRanges];
+};
 
 export default collectSourceRanges;

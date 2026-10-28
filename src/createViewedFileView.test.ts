@@ -44,7 +44,9 @@ const layoutInput = (
       changes: [],
       readDocument: (side) => {
         readSides.push(side);
-        return Promise.resolve(readable.includes(side) ? 'source' : null);
+        return Promise.resolve(
+          readable.includes(side) ? 'line\n'.repeat(40) : null,
+        );
       },
     },
   };
@@ -79,6 +81,7 @@ describe('createViewedFileView', () => {
           sourceRanges: [
             { side: 'new', range: [1, 5] },
             { side: 'new', range: [35, 40] },
+            { side: 'new', range: [1, 40] },
           ],
         },
         { id: 'viewed-hunks' },

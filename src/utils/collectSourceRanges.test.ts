@@ -2,45 +2,38 @@ import { describe, expect, it } from 'vitest';
 
 import collectSourceRanges from './collectSourceRanges.ts';
 
-const BOTH_SIDES = new Set(['old', 'new'] as const);
+const GUIDE_HUNKS = [
+  { index: 0, header: '@@ -1,5 +1,5 @@', oldRange: [1, 5], newRange: [1, 5] },
+  {
+    index: 1,
+    header: '@@ -35,6 +35,6 @@',
+    oldRange: [35, 40],
+    newRange: [35, 40],
+  },
+] satisfies Parameters<typeof collectSourceRanges>[0];
 
 describe('collectSourceRanges', () => {
-  it('lists both sides of every hunk when Hunk can read both', () => {
-    const hunks = [
-      {
-        index: 0,
-        header: '@@ -1,5 +1,5 @@',
-        oldRange: [1, 5],
-        newRange: [1, 5],
-      },
-      {
-        index: 1,
-        header: '@@ -35,6 +35,6 @@',
-        oldRange: [35, 40],
-        newRange: [35, 40],
-      },
-    ] satisfies Parameters<typeof collectSourceRanges>[0];
-
-    expect(collectSourceRanges(hunks, BOTH_SIDES)).toEqual([
+  it('lists the hunks first, then the whole file, on both readable sides', () => {
+    expect(collectSourceRanges(GUIDE_HUNKS, { old: 40, new: 40 })).toEqual([
       { side: 'old', range: [1, 5] },
       { side: 'new', range: [1, 5] },
       { side: 'old', range: [35, 40] },
       { side: 'new', range: [35, 40] },
+      { side: 'old', range: [1, 40] },
+      { side: 'new', range: [1, 40] },
     ]);
   });
 
   it('leaves out a side that Hunk cannot read', () => {
-    const hunks = [
-      { index: 0, header: '@@ -1 +1 @@', oldRange: [1, 1], newRange: [1, 1] },
-    ] satisfies Parameters<typeof collectSourceRanges>[0];
-
-    expect(collectSourceRanges(hunks, new Set(['new'] as const))).toEqual([
-      { side: 'new', range: [1, 1] },
+    expect(collectSourceRanges(GUIDE_HUNKS, { new: 40 })).toEqual([
+      { side: 'new', range: [1, 5] },
+      { side: 'new', range: [35, 40] },
+      { side: 'new', range: [1, 40] },
     ]);
-    expect(collectSourceRanges(hunks, new Set())).toEqual([]);
+    expect(collectSourceRanges(GUIDE_HUNKS, {})).toEqual([]);
   });
 
-  it('leaves out a span that covers no lines, as for a new file', () => {
+  it('leaves out spans that cover no lines, as for a new file', () => {
     const hunks = [
       {
         index: 0,
@@ -48,22 +41,17 @@ describe('collectSourceRanges', () => {
         oldRange: [0, 0],
         newRange: [1, 31],
       },
-      {
-        index: 1,
-        header: '@@ -9,0 +9,0 @@',
-        oldRange: [9, 8],
-        newRange: [9, 8],
-      },
     ] satisfies Parameters<typeof collectSourceRanges>[0];
 
-    expect(collectSourceRanges(hunks, BOTH_SIDES)).toEqual([
+    expect(collectSourceRanges(hunks, { old: 0, new: 31 })).toEqual([
+      { side: 'new', range: [1, 31] },
       { side: 'new', range: [1, 31] },
     ]);
   });
 
   it('leaves out a hunk without line numbers', () => {
     expect(
-      collectSourceRanges([{ index: 0, header: '@@' }], BOTH_SIDES),
-    ).toEqual([]);
+      collectSourceRanges([{ index: 0, header: '@@' }], { new: 3 }),
+    ).toEqual([{ side: 'new', range: [1, 3] }]);
   });
 });
