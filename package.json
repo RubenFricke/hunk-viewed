@@ -1,0 +1,34 @@
+{
+  "name": "hunk-viewed",
+  "version": "0.0.0",
+  "private": true,
+  "description": "GitHub-style Viewed marks for Hunk: fold a reviewed file to one row and see your progress",
+  "keywords": [
+    "hunk",
+    "hunk-extension",
+    "code-review",
+    "diff",
+    "viewed"
+  ],
+  "homepage": "https://github.com/RubenFricke/hunk-viewed#readme",
+  "bugs": {
+    "url": "https://github.com/RubenFricke/hunk-viewed/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RubenFricke/hunk-viewed.git"
+  },
+  "license": "MIT",
+  "author": "Ruben Fricke",
+  "type": "module",
+  "hunk": {
+    "apiVersion": 31,
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "packageManager": "bun@1.4.4",
+  "devDependencies": {
+    "hunkdiff": "0.24.0"
+  }
+}
