@@ -20,7 +20,6 @@ const PROBE_COMMAND = 'zz-load-probe';
 const UNKNOWN_COMMAND = `Unknown command: ${PROBE_COMMAND}`;
 const LOAD_FAILED = 'One or more extensions failed to load';
 
-/** Resolves the CLI script of the Hunk version in devDependencies. */
 const findHunkCli = async (): Promise<string> => {
   const manifest = JSON.parse(
     await readFile(join(HUNK_PACKAGE, 'package.json'), 'utf8'),
@@ -33,10 +32,6 @@ const findHunkCli = async (): Promise<string> => {
   return join(HUNK_PACKAGE, bin);
 };
 
-/**
- * Runs the probe command in Hunk with one extension, an empty config and an
- * empty state, and returns everything Hunk printed.
- */
 const probeExtension = async (
   workDir: string,
   extensionDir: string,
