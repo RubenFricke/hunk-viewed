@@ -6,26 +6,18 @@ import type {
 
 const SIDES = ['old', 'new'] as const satisfies readonly ExtensionFileSide[];
 
-/** The number of source lines of each side that Hunk can read. */
 export type SourceLineCounts = Readonly<
   Partial<Record<ExtensionFileSide, number>>
 >;
 
 /**
- * Lists the source lines to bind the folded row to: the lines of every hunk,
- * then every line of the file, on the sides that Hunk can read.
- *
- * @remarks
- *   Binding the row makes it a stop for `j` and `k`. Hunk names that stop after
- *   the first range, so the hunks come first. Binding every line lets each note
- *   show under the row, also a note whose lines moved in a reload; an unbound
- *   note makes Hunk show the raw diff instead. Hunk allows ranges in one row to
- *   overlap. A side without a line count, such as the commit pointer of a
- *   submodule, stays unbound. Spans that cover no lines, like `[0, 0]` for the
- *   missing side of a new file, are left out.
- * @param hunks - The parsed hunks of the file.
- * @param lineCounts - The line count of each side that Hunk can read.
- * @returns The ranges, hunks first.
+ * Binding the folded row makes it a stop for `j` and `k`. Hunk names that stop
+ * after the first range, so the hunks come first. Binding every line of the
+ * file lets each note show under the row, also a note whose lines moved in a
+ * reload; an unbound note makes Hunk show the raw diff instead. Hunk allows
+ * ranges in one row to overlap. A side without a line count, such as the commit
+ * pointer of a submodule, stays unbound. Spans that cover no lines, like `[0,
+ * 0]` for the missing side of a new file, are left out.
  */
 const collectSourceRanges = (
   hunks: readonly ExtensionDiffHunk[],

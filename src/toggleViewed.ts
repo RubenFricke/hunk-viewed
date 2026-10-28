@@ -10,29 +10,20 @@ import { VIEWED_VIEW_ID } from './createViewedFileView.ts';
 import type { ViewedStore } from './createViewedStore.ts';
 import showProgress from './showProgress.ts';
 
-/** The command, with `x` as its default key. Users remap it by its id. */
+/** Users remap the key by this id, so the id must not change. */
 export const TOGGLE_VIEWED_COMMAND = {
   id: 'toggleViewed',
   title: 'Toggle viewed on the selected file',
   key: 'x',
 } as const satisfies ExtensionCommand;
 
-/** The parts of Hunk's command context that toggling uses. */
 interface ToggleViewedContext extends Pick<ExtensionContext, 'notify'> {
   readonly selection: Pick<ExtensionReviewSelection, 'file'>;
   readonly fileViews: Pick<ExtensionFileViewControls, 'select'>;
   readonly statusLine: ExtensionStatusLineControls;
 }
 
-/**
- * Marks the selected file viewed and folds it, or unmarks and unfolds a viewed
- * file. The selection stays on the file.
- *
- * @remarks
- *   The mark comes before the view: the folded view only matches viewed files.
- * @param ctx - Hunk's command context.
- * @param store - The viewed marks of the session.
- */
+/** The mark comes before the view: the folded view only matches viewed files. */
 const toggleViewed = (ctx: ToggleViewedContext, store: ViewedStore): void => {
   const { file } = ctx.selection;
   if (!file) {

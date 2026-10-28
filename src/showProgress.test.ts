@@ -6,11 +6,6 @@ import { describe, expect, it } from 'vitest';
 
 import showProgress from './showProgress.ts';
 
-/**
- * Records what an extension writes to the status line.
- *
- * @returns The controls and the recorded calls.
- */
 const recordStatusLine = (): {
   statusLine: ExtensionStatusLineControls;
   set: ExtensionStatusItem[];

@@ -9,11 +9,6 @@ import createViewedStore from './createViewedStore.ts';
 import showProgress from './showProgress.ts';
 import toggleViewed, { TOGGLE_VIEWED_COMMAND } from './toggleViewed.ts';
 
-/**
- * Registers hunk-viewed with Hunk.
- *
- * @param hunk - The Hunk extension API.
- */
 const viewedExtension = (hunk: HunkExtensionAPI): void => {
   const store = createViewedStore();
 

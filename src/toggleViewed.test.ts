@@ -17,13 +17,6 @@ const ORDER = fakeDiffFile({
   patch: '@@ -4,1 +4,1 @@\n-return 1;\n+return 2;',
 });
 
-/**
- * Builds a command context with one selected file and records its effects.
- *
- * @param file - The selected file, or null.
- * @returns The context and the recorded view selections, status items and
- *   notices.
- */
 const recordContext = (
   file: ExtensionDiffFile | null,
 ): {

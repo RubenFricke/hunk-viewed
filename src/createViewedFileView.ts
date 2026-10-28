@@ -11,13 +11,6 @@ export const VIEWED_VIEW_ID = 'viewed';
 
 const SIDES = ['old', 'new'] as const satisfies readonly ExtensionFileSide[];
 
-/**
- * Creates the file presentation that folds a viewed file to its header and one
- * `✓ Viewed` row.
- *
- * @param store - The viewed marks of the session.
- * @returns The file view to register with Hunk.
- */
 const createViewedFileView = (
   store: Pick<ViewedStore, 'isViewed'>,
 ): ExtensionFileView => ({

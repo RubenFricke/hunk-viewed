@@ -23,13 +23,6 @@ const GUIDE = fakeDiffFile({
   ],
 });
 
-/**
- * Builds the layout input for one file and records which sides were read.
- *
- * @param file - The file to lay out.
- * @param readable - The sides that have a source document.
- * @returns The input and the list of read sides.
- */
 const layoutInput = (
   file: ExtensionDiffFile,
   readable: readonly ExtensionFileSide[],

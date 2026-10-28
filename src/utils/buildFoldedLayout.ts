@@ -11,18 +11,11 @@ const VIEWED_SPANS = [
 ] as const satisfies readonly ExtensionFileViewSpan[];
 
 /**
- * Builds the folded presentation of a viewed file: Hunk's own file header, then
- * one `✓ Viewed` row.
- *
- * @remarks
- *   Hunk needs one row range for every hunk. A row with source ranges must belong
- *   to exactly one hunk, so with source ranges the first hunk owns the `✓
- *   Viewed` row and the others share one empty row below it. A row is at least
- *   one line high, so that empty row stays visible. Without source ranges every
- *   hunk owns the `✓ Viewed` row.
- * @param hunkCount - The number of parsed hunks in the file.
- * @param sourceRanges - The source lines to bind the `✓ Viewed` row to.
- * @returns The layout for Hunk.
+ * Hunk needs one row range for every hunk. A row with source ranges must belong
+ * to exactly one hunk, so with source ranges the first hunk owns the `✓ Viewed`
+ * row and the others share one empty row below it. A row is at least one line
+ * high, so that empty row stays visible. Without source ranges every hunk owns
+ * the `✓ Viewed` row.
  */
 const buildFoldedLayout = (
   hunkCount: number,

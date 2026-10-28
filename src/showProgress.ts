@@ -5,14 +5,8 @@ import type { ViewedProgress } from './createViewedStore.ts';
 const PROGRESS_ITEM_ID = 'progress';
 
 /**
- * Shows how many files of the review are viewed, at the right of Hunk's status
- * line.
- *
- * @remarks
- *   An empty review shows nothing, because a status item keeps the status line on
- *   screen.
- * @param statusLine - Hunk's status line controls.
- * @param progress - The viewed and total number of files.
+ * An empty review shows nothing, because a status item keeps the status line on
+ * screen.
  */
 const showProgress = (
   statusLine: ExtensionStatusLineControls,

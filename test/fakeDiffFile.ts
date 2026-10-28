@@ -1,11 +1,5 @@
 import type { ExtensionDiffFile } from 'hunkdiff/extension';
 
-/**
- * Builds a reviewed file as Hunk hands it to an extension.
- *
- * @param overrides - The fields a test cares about.
- * @returns The file, with plain values for every other field.
- */
 const fakeDiffFile = (
   overrides: Partial<ExtensionDiffFile> = {},
 ): ExtensionDiffFile => ({

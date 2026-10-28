@@ -4,17 +4,12 @@ import { createHash } from 'node:crypto';
 const HUNK_LINE_NUMBERS = /^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@/;
 
 /**
- * Computes a key for the changes in one file's patch.
- *
- * @remarks
- *   A viewed mark stores this key and expires when it differs, like the Viewed
- *   checkbox on GitHub. The key covers the hunks only: Git's header lines
- *   before the first hunk and the line numbers of each `@@` line are left out.
- *   So a mark stays when the same changes only move up or down in the file. A
- *   patch without hunks, such as a binary file, is keyed whole: its `index`
- *   line is then the only sign that the file changed.
- * @param patch - The unified diff of one file.
- * @returns A SHA-256 digest in hex.
+ * A viewed mark stores this key and expires when it differs, like the Viewed
+ * checkbox on GitHub. The key covers the hunks only: Git's header lines before
+ * the first hunk and the line numbers of each `@@` line are left out, so a mark
+ * stays when the same changes only move up or down in the file. A patch without
+ * hunks, such as a binary file, is keyed whole: its `index` line is then the
+ * only sign that the file changed.
  */
 const computeChangeKey = (patch: string): string => {
   const lines = patch.split('\n');

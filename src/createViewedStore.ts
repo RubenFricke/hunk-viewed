@@ -2,16 +2,13 @@ import type { ExtensionDiffFile } from 'hunkdiff/extension';
 
 import computeChangeKey from './utils/computeChangeKey.ts';
 
-/** The parts of a reviewed file that a viewed mark depends on. */
 type ViewedFile = Pick<ExtensionDiffFile, 'path' | 'patch'>;
 
-/** How many files of the current review are viewed. */
 export interface ViewedProgress {
   readonly viewed: number;
   readonly total: number;
 }
 
-/** Viewed marks for one Hunk session. */
 export interface ViewedStore {
   readonly isViewed: (file: ViewedFile) => boolean;
   readonly mark: (file: ViewedFile) => void;
@@ -21,14 +18,10 @@ export interface ViewedStore {
 }
 
 /**
- * Creates the viewed marks for one Hunk session. Nothing is written to disk,
- * like Hunk's own review notes.
- *
- * @remarks
- *   Marks are keyed by path because Hunk renumbers file ids when a reload adds or
- *   drops a file. A mark holds the change key of the patch it was set on, so it
- *   no longer counts once the changes in the file differ.
- * @returns The store.
+ * Nothing is written to disk, like Hunk's own review notes. Marks are keyed by
+ * path, because Hunk renumbers file ids when a reload adds or drops a file. A
+ * mark holds the change key of the patch it was set on, so it no longer counts
+ * once the changes in the file differ.
  */
 const createViewedStore = (): ViewedStore => {
   const changeKeysByPath = new Map<string, string>();
