@@ -2,7 +2,7 @@ import type { ExtensionDiffFile } from 'hunkdiff/extension';
 
 import computeChangeKey from './utils/computeChangeKey.ts';
 
-type ViewedFile = Pick<ExtensionDiffFile, 'path' | 'patch'>;
+type ViewedFile = Pick<ExtensionDiffFile, 'id' | 'path' | 'patch'>;
 
 export interface ViewedProgress {
   readonly viewed: number;
@@ -15,6 +15,7 @@ export interface ViewedStore {
   readonly unmark: (file: ViewedFile) => void;
   readonly reconcile: (files: readonly ViewedFile[]) => void;
   readonly progress: () => ViewedProgress;
+  readonly viewedFiles: () => readonly ViewedFile[];
 }
 
 /**
@@ -52,6 +53,7 @@ const createViewedStore = (): ViewedStore => {
         }
       }
     },
+    viewedFiles: () => files.filter(isViewed),
     progress: () => ({
       viewed: files.filter(isViewed).length,
       total: files.length,
