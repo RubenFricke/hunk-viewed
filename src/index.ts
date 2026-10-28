@@ -1,12 +1,37 @@
-import type { HunkExtensionAPI } from 'hunkdiff/extension';
+import type {
+  ExtensionChangeset,
+  ExtensionEventContext,
+  HunkExtensionAPI,
+} from 'hunkdiff/extension';
+
+import createViewedFileView from './createViewedFileView.ts';
+import createViewedStore from './createViewedStore.ts';
+import showProgress from './showProgress.ts';
+import toggleViewed, { TOGGLE_VIEWED_COMMAND } from './toggleViewed.ts';
 
 /**
  * Registers hunk-viewed with Hunk.
  *
- * @param _hunk - The Hunk extension API.
+ * @param hunk - The Hunk extension API.
  */
-const viewedExtension = (_hunk: HunkExtensionAPI): void => {
-  /** The scaffold only loads; the next pull requests register the commands. */
+const viewedExtension = (hunk: HunkExtensionAPI): void => {
+  const store = createViewedStore();
+
+  hunk.registerFileView(createViewedFileView(store));
+  hunk.registerCommand(TOGGLE_VIEWED_COMMAND, (ctx) => {
+    toggleViewed(ctx, store);
+  });
+
+  /** A load or reload brings new patches: drop the marks they changed. */
+  const reconcile = (
+    { changeset }: { readonly changeset: ExtensionChangeset },
+    ctx: ExtensionEventContext,
+  ): void => {
+    store.reconcile(changeset.files);
+    showProgress(ctx.statusLine, store.progress());
+  };
+  hunk.on('changeset_loaded', reconcile);
+  hunk.on('session_reload', reconcile);
 };
 
 export default viewedExtension;
