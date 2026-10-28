@@ -35,13 +35,14 @@ interface ToggleViewedContext extends Pick<ExtensionContext, 'notify'> {
 interface ToggleViewedDependencies {
   readonly store: ViewedStore;
   readonly folds: FoldTracker;
+  readonly announce: () => void;
   readonly waitUntil?: (check: () => boolean) => Promise<boolean>;
 }
 
 /** The mark comes before the view: the folded view only matches viewed files. */
 const toggleViewed = async (
   ctx: ToggleViewedContext,
-  { store, folds, waitUntil = waitFor }: ToggleViewedDependencies,
+  { store, folds, announce, waitUntil = waitFor }: ToggleViewedDependencies,
 ): Promise<void> => {
   const { file } = ctx.selection;
   if (!file) {
@@ -54,6 +55,7 @@ const toggleViewed = async (
     ctx.fileViews.select(null);
     folds.unfolded(file);
     showProgress(ctx.statusLine, store.progress());
+    announce();
     return;
   }
 
@@ -72,6 +74,7 @@ const toggleViewed = async (
   }
   const progress = store.progress();
   showProgress(ctx.statusLine, progress);
+  announce();
 
   const next = findNextUnviewed({
     files: ctx.selection.files,

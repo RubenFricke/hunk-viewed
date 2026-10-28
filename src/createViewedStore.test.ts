@@ -52,6 +52,14 @@ describe('createViewedStore', () => {
     expect(store.isViewed(CART)).toBe(false);
   });
 
+  it('reports whether a reload dropped a mark', () => {
+    const store = createViewedStore();
+    store.mark(CART);
+
+    expect(store.reconcile([CART, ORDER])).toBe(false);
+    expect(store.reconcile([ORDER])).toBe(true);
+  });
+
   it('drops a mark when the file left the review', () => {
     const store = createViewedStore();
     store.mark(CART);

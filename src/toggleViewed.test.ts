@@ -88,12 +88,22 @@ const recordContext = (
 const createDependencies = (): {
   store: ViewedStore;
   folds: FoldTracker;
+  announce: () => void;
   waitUntil: (check: () => boolean) => Promise<boolean>;
-} => ({
-  store: createViewedStore(),
-  folds: createFoldTracker(),
-  waitUntil: (check) => Promise.resolve(check()),
-});
+  announcements: number[];
+} => {
+  const store = createViewedStore();
+  const announcements: number[] = [];
+  return {
+    store,
+    folds: createFoldTracker(),
+    announce: () => {
+      announcements.push(store.viewedFiles().length);
+    },
+    waitUntil: (check) => Promise.resolve(check()),
+    announcements,
+  };
+};
 
 describe('toggleViewed', () => {
   it('marks an unviewed file and folds it', async () => {
@@ -208,6 +218,16 @@ describe('toggleViewed', () => {
     expect(executedCommands).toEqual([]);
     expect(selectedFileIds).toEqual(['git:2:src/user.ts']);
     expect(folds.needsRefold()).toBe(false);
+  });
+
+  it('announces every mark and unmark', async () => {
+    const dependencies = createDependencies();
+    dependencies.store.reconcile([CART, ORDER, USER]);
+    const { ctx } = recordContext(CART);
+    await toggleViewed(ctx, dependencies);
+    await toggleViewed(ctx, dependencies);
+
+    expect(dependencies.announcements).toEqual([1, 0]);
   });
 
   it('shows the progress after each toggle', async () => {

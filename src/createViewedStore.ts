@@ -13,7 +13,8 @@ export interface ViewedStore {
   readonly isViewed: (file: ViewedFile) => boolean;
   readonly mark: (file: ViewedFile) => void;
   readonly unmark: (file: ViewedFile) => void;
-  readonly reconcile: (files: readonly ViewedFile[]) => void;
+  /** Returns whether a mark was dropped. */
+  readonly reconcile: (files: readonly ViewedFile[]) => boolean;
   readonly progress: () => ViewedProgress;
   readonly viewedFiles: () => readonly ViewedFile[];
 }
@@ -46,12 +47,15 @@ const createViewedStore = (): ViewedStore => {
     reconcile: (nextFiles) => {
       files = nextFiles;
       const filesByPath = new Map(nextFiles.map((file) => [file.path, file]));
+      let hasDropped = false;
       for (const path of changeKeysByPath.keys()) {
         const file = filesByPath.get(path);
         if (!file || !isViewed(file)) {
           changeKeysByPath.delete(path);
+          hasDropped = true;
         }
       }
+      return hasDropped;
     },
     viewedFiles: () => files.filter(isViewed),
     progress: () => ({
