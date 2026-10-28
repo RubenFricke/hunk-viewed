@@ -6,7 +6,7 @@ import computeChangeKey from './utils/computeChangeKey.ts';
 type ViewedFile = Pick<ExtensionDiffFile, 'path' | 'patch'>;
 
 /** How many files of the current review are viewed. */
-interface ViewedProgress {
+export interface ViewedProgress {
   readonly viewed: number;
   readonly total: number;
 }
