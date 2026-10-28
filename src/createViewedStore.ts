@@ -12,7 +12,7 @@ interface ViewedProgress {
 }
 
 /** Viewed marks for one Hunk session. */
-interface ViewedStore {
+export interface ViewedStore {
   readonly isViewed: (file: ViewedFile) => boolean;
   readonly mark: (file: ViewedFile) => void;
   readonly unmark: (file: ViewedFile) => void;
