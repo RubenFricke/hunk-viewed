@@ -50,10 +50,11 @@ jobs:
       - name: Plan the release
         id: plan
         run: |
+          notes=(--notes "$RUNNER_TEMP/requirements.md")
           if [ "$DRY_RUN" = true ]; then
-            bun run scripts/release.ts --bump "$BUMP" --dry-run
+            bun run scripts/release.ts --bump "$BUMP" --dry-run "${notes[@]}"
           else
-            bun run scripts/release.ts --bump "$BUMP"
+            bun run scripts/release.ts --bump "$BUMP" "${notes[@]}"
           fi
       - name: Commit, tag and push
         if: ${{ !inputs.dry_run }}
@@ -78,4 +79,6 @@ jobs:
           if [ -n "$PREVIOUS_TAG" ]; then
             start=(--notes-start-tag "$PREVIOUS_TAG")
           fi
-          gh release create "$TAG" --verify-tag --title "$TAG" --generate-notes "${start[@]}"
+          # The Hunk this release needs goes above the generated list.
+          gh release create "$TAG" --verify-tag --title "$TAG" \
+            --notes-file "$RUNNER_TEMP/requirements.md" --generate-notes "${start[@]}"
