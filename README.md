@@ -1,8 +1,8 @@
 # hunk-viewed
 
-GitHub-style **Viewed** marks for [Hunk](https://hunk.dev): press `x` to mark a file viewed, fold it to one row, see your progress and move on to the next file.
+GitHub-style **Viewed** marks for [Hunk](https://hunk.dev): press `x` to mark a hunk viewed, `X` for the whole file, fold what you have seen, see your progress and move on to what is left.
 
-<img alt="A Hunk review of five files. Each press of x folds the selected file to its header and one ✓ Viewed row, the status line counts up from 0 of 5 files viewed, and the selection moves to the next unviewed file. On a viewed file, x unfolds it again." src="https://github.com/RubenFricke/hunk-viewed/raw/assets/demo/hero.gif" width="940">
+<img alt="A Hunk review of five files. x dims the selected hunk and moves to the next one; when the last hunk of a file is viewed the file folds to its header and one ✓ Viewed row. X folds a whole file at once. The status line counts the hunks of the current file and the files of the review." src="https://github.com/RubenFricke/hunk-viewed/raw/assets/demo/hero.gif" width="940">
 
 ## Install
 
@@ -14,19 +14,21 @@ Requires Hunk 0.24.0 or newer (extension API 31). Releases are tagged, so you ca
 
 ## What you get
 
-| Key | Command id                 | What it does                                                                                                                                                                     |
-| --- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x` | `hunk-viewed.toggleViewed` | Mark the selected file viewed, fold it to its header and one `✓ Viewed` row, and jump to the next file you have not viewed. On a viewed file: drop the mark, unfold it and stay. |
+| Key | Command id               | What it does                                                                                                                                                                               |
+| --- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `x` | `hunk-viewed.toggleHunk` | Mark the selected hunk viewed, dim it, and jump to the next hunk you have not viewed. When that was the last hunk of its file, the file folds. On a viewed hunk: drop its mark and stay.   |
+| `X` | `hunk-viewed.toggleFile` | Mark the whole file viewed, fold it to its header and one `✓ Viewed` row, and jump to the next file you have not viewed. On a folded file, `x` and `X` both unfold it with no hunk viewed. |
 
-The status line shows `3 of 12 files viewed`. After the last file, `x` jumps back to the first unviewed file above. When every file is viewed it says `All 12 files viewed`; when only files hidden by the filter are left it says `No unviewed file is visible`.
+The status line shows `3 of 12 files viewed` on the right, and `1 of 3 hunks viewed` on the left while the current file is partly viewed. After the last hunk or file, the jump goes back to the first unviewed one above. When every file is viewed it says `All 12 files viewed`; when only files hidden by the filter are left it says `No unviewed file is visible`.
 
 ## How it works
 
+- **A viewed hunk is dimmed.** Hunk recedes its text toward the background and keeps the diff colors. A file view can only fold a whole file, so a hunk stays in place until the last hunk of its file is viewed; then the file folds. A folded file was viewed as a whole, so opening it again, with `x` or `X`, starts over with no hunk viewed.
 - **The fold keeps the review intact.** A viewed file shows its own header plus one `✓ Viewed` row. `j` and `k` still stop there, once per file, and the cards of your notes stay under it.
-- **The jump** takes the next unviewed file below the selection, and after the last one the first unviewed file above. Only files the filter shows take part.
-- **Folds come back by themselves.** Hunk forgets the presentation of a file when a reload renumbers it, so every `x` brings every viewed file back in line with the marks. No separate command to fold again. That also means a viewed file you set back to the raw diff by hand folds again on the next `x`; drop its mark with `x` instead.
-- **A mark holds a hash of the file's hunks.** A reload that changes the lines of a viewed file drops the mark, like GitHub does. Lines that merely moved keep it.
-- **Other extensions can follow along.** Every mark, unmark and dropped mark sends `hunk-viewed:changed` on Hunk's event bus with `{ viewed: string[] }`, the paths of every viewed file in review order.
+- **The jump** takes the next unviewed hunk below the selection, in this file or a later one, and after the last one the first unviewed hunk above. A file without hunks, such as a binary one, is one stop. Only files the filter shows take part.
+- **Folds come back by themselves.** Hunk forgets the presentation of a file when a reload renumbers it, so every fold brings every viewed file back in line with the marks. No separate command to fold again. That also means a viewed file you set back to the raw diff by hand folds again on the next fold; drop its mark with `X` instead.
+- **A mark holds a hash of the changes.** A file mark hashes the file's hunks, a hunk mark hashes that one hunk. A reload that changes those lines drops the mark, like GitHub does. Lines that merely moved keep it.
+- **Other extensions can follow along.** Every file mark, unmark and dropped mark sends `hunk-viewed:changed` on Hunk's event bus with `{ viewed: string[] }`, the paths of every viewed file in review order. Hunk marks are not in it.
 
   ```ts
   hunk.events.on<{ viewed: string[] }>('hunk-viewed:changed', ({ viewed }) => {
@@ -36,12 +38,16 @@ The status line shows `3 of 12 files viewed`. After the last file, `x` jumps bac
 
 ## Configuration
 
-There are no settings. To put the command on another key, remap it in your Hunk config:
+One setting, and the two keys, shown here with their defaults. The keys are remapped like any Hunk command.
 
 ```toml
 # ~/.config/hunk/config.toml
+[extension.hunk-viewed]
+hunk_progress = true   # "1 of 3 hunks viewed" on the status line while a file is partly viewed
+
 [keybindings]
-"hunk-viewed.toggleViewed" = "V"
+"hunk-viewed.toggleHunk" = "x"
+"hunk-viewed.toggleFile" = "X"
 ```
 
 ## What it reads and writes
@@ -58,7 +64,8 @@ Each release lists the Hunk it needs. When a release raises that minimum, its no
 
 - **Notes stay visible.** A viewed file with notes folds, but the note cards keep showing under the `✓ Viewed` row. Hunk has no way yet for a file view to summarize them.
 - **Files without a source,** such as a submodule or a patch from stdin, fold too, but `j` and `k` skip them; `[`, `]`, `,` and `.` still reach them. For submodules, `git config diff.submodule diff` gives Hunk the lines it needs.
-- **After a reload that adds or removes a file,** the viewed files after it show unfolded until the next `x`. Hunk keeps a file's presentation by its position in the list.
+- **Dimming is subtle.** Hunk sets how far a dimmed hunk recedes, and the red and green line backgrounds stay, so a viewed hunk takes the same room as before. Only a whole file folds. The hunk count on the status line is there for that reason.
+- **After a reload that adds or removes a file,** the viewed files after it show unfolded until the next fold. Hunk keeps a file's presentation by its position in the list.
 
 ## Development
 
