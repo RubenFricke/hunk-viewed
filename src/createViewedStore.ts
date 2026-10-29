@@ -9,12 +9,19 @@ export interface ViewedProgress {
   readonly total: number;
 }
 
+/** The paths whose marks a reload dropped, by reason. */
+interface DroppedMarks {
+  /** Still in the review, but the changes in the file differ. */
+  readonly changed: readonly string[];
+  /** No longer in the review. */
+  readonly removed: readonly string[];
+}
+
 export interface ViewedStore {
   readonly isViewed: (file: ViewedFile) => boolean;
   readonly mark: (file: ViewedFile) => void;
   readonly unmark: (file: ViewedFile) => void;
-  /** Returns whether a mark was dropped. */
-  readonly reconcile: (files: readonly ViewedFile[]) => boolean;
+  readonly reconcile: (files: readonly ViewedFile[]) => DroppedMarks;
   readonly progress: () => ViewedProgress;
   readonly viewedFiles: () => readonly ViewedFile[];
 }
@@ -47,15 +54,20 @@ const createViewedStore = (): ViewedStore => {
     reconcile: (nextFiles) => {
       files = nextFiles;
       const filesByPath = new Map(nextFiles.map((file) => [file.path, file]));
-      let hasDropped = false;
+      const changed: string[] = [];
+      const removed: string[] = [];
       for (const path of changeKeysByPath.keys()) {
         const file = filesByPath.get(path);
-        if (!file || !isViewed(file)) {
-          changeKeysByPath.delete(path);
-          hasDropped = true;
+        if (!file) {
+          removed.push(path);
+        } else if (!isViewed(file)) {
+          changed.push(path);
         }
       }
-      return hasDropped;
+      for (const path of [...changed, ...removed]) {
+        changeKeysByPath.delete(path);
+      }
+      return { changed, removed };
     },
     viewedFiles: () => files.filter(isViewed),
     progress: () => ({

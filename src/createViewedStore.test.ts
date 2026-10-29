@@ -52,12 +52,38 @@ describe('createViewedStore', () => {
     expect(store.isViewed(CART)).toBe(false);
   });
 
-  it('reports whether a reload dropped a mark', () => {
+  it('reports no dropped marks when nothing changed', () => {
     const store = createViewedStore();
     store.mark(CART);
 
-    expect(store.reconcile([CART, ORDER])).toBe(false);
-    expect(store.reconcile([ORDER])).toBe(true);
+    expect(store.reconcile([CART, ORDER])).toEqual({
+      changed: [],
+      removed: [],
+    });
+  });
+
+  it('reports a mark dropped because the changes differ', () => {
+    const store = createViewedStore();
+    store.mark(CART);
+    const edited = {
+      ...CART,
+      patch: '@@ -1,1 +1,1 @@\n-return 1;\n+return 3;',
+    };
+
+    expect(store.reconcile([edited, ORDER])).toEqual({
+      changed: ['src/cart.ts'],
+      removed: [],
+    });
+  });
+
+  it('reports a mark dropped because the file left the review', () => {
+    const store = createViewedStore();
+    store.mark(CART);
+
+    expect(store.reconcile([ORDER])).toEqual({
+      changed: [],
+      removed: ['src/cart.ts'],
+    });
   });
 
   it('drops a mark when the file left the review', () => {
