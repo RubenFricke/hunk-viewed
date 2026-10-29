@@ -10,7 +10,7 @@ GitHub-style **Viewed** marks for [Hunk](https://hunk.dev): press `x` to mark a 
 hunk extension install RubenFricke/hunk-viewed
 ```
 
-Requires Hunk 0.24.0 or newer (extension API 31). Tested with Hunk 0.24.0 and 0.24.1. Releases are tagged, so you can pin one: `hunk extension install RubenFricke/hunk-viewed@v0.1.0`.
+Requires Hunk 0.24.0 or newer (extension API 31). Releases are tagged, so you can pin one: `hunk extension install RubenFricke/hunk-viewed@v0.1.0`.
 
 ## What you get
 
@@ -50,9 +50,9 @@ Nothing. Marks live in memory for the session, the same way Hunk keeps its own r
 
 ## Compatibility
 
-| hunk-viewed | Hunk            | Extension API |
-| ----------- | --------------- | ------------- |
-| v0.1.0      | 0.24.0 – 0.24.1 | 31 – 32       |
+hunk-viewed follows the newest Hunk release. CI tests every pull request, and every day, against the newest Hunk release and against the oldest Hunk that hunk-viewed supports. When a new Hunk release breaks something, the fix comes in a new hunk-viewed release.
+
+Each release lists the Hunk it needs. When a release raises that minimum, its notes say which earlier release still works with an older Hunk. If your Hunk is too old, Hunk itself tells you at startup.
 
 ## Known limitations
 
