@@ -2,7 +2,7 @@
   "name": "hunk-viewed",
   "version": "0.0.0",
   "private": true,
-  "description": "GitHub-style Viewed marks for Hunk: fold a reviewed file to one row and see your progress",
+  "description": "GitHub-style Viewed marks for Hunk: press x to mark a file viewed, fold it to one row, see your progress and move on to the next file",
   "keywords": [
     "hunk",
     "hunk-extension",
