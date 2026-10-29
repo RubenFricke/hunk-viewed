@@ -3,10 +3,12 @@ import { describe, expect, it } from 'vitest';
 import createViewedStore from './createViewedStore.ts';
 
 const CART = {
+  id: 'git:0:src/cart.ts',
   path: 'src/cart.ts',
   patch: '@@ -1,1 +1,1 @@\n-return 1;\n+return 2;',
 };
 const ORDER = {
+  id: 'git:1:src/order.ts',
   path: 'src/order.ts',
   patch: '@@ -4,1 +4,1 @@\n-return 1;\n+return 2;',
 };
@@ -50,6 +52,14 @@ describe('createViewedStore', () => {
     expect(store.isViewed(CART)).toBe(false);
   });
 
+  it('reports whether a reload dropped a mark', () => {
+    const store = createViewedStore();
+    store.mark(CART);
+
+    expect(store.reconcile([CART, ORDER])).toBe(false);
+    expect(store.reconcile([ORDER])).toBe(true);
+  });
+
   it('drops a mark when the file left the review', () => {
     const store = createViewedStore();
     store.mark(CART);
@@ -67,5 +77,14 @@ describe('createViewedStore', () => {
     store.mark(ORDER);
 
     expect(store.progress()).toEqual({ viewed: 1, total: 2 });
+  });
+
+  it('lists the viewed files in the order of the review', () => {
+    const store = createViewedStore();
+    store.reconcile([CART, ORDER]);
+    store.mark(ORDER);
+    store.mark(CART);
+
+    expect(store.viewedFiles()).toEqual([CART, ORDER]);
   });
 });
