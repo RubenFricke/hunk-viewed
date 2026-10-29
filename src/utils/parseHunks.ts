@@ -47,10 +47,17 @@ const parseHunks = (patch: string): readonly ParsedHunk[] => {
       newLine = Number(header[2]);
       continue;
     }
-    if (!current || raw === '' || raw.startsWith('\\')) {
+    if (!current || raw === '') {
       continue;
     }
+    /**
+     * A missing final newline is a change too, so its marker counts for the
+     * key; it is not a line, so it counts for nothing else.
+     */
     current.body.push(raw);
+    if (raw.startsWith('\\')) {
+      continue;
+    }
     const length = raw.length - 1;
     if (raw.startsWith('+')) {
       current.lines.push({ side: 'new', line: newLine, length });

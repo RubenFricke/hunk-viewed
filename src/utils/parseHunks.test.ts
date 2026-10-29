@@ -46,6 +46,15 @@ describe('parseHunks', () => {
     expect(parseHunks(edited)[0]?.key).not.toBe(parseHunks(PATCH)[0]?.key);
   });
 
+  it('changes a key when the final newline comes or goes', () => {
+    const withNewline = PATCH.replace('\n\\ No newline at end of file', '');
+
+    expect(parseHunks(withNewline)[1]?.key).not.toBe(parseHunks(PATCH)[1]?.key);
+    expect(parseHunks(withNewline)[1]?.lines).toEqual(
+      parseHunks(PATCH)[1]?.lines,
+    );
+  });
+
   it('gives two identical hunks different keys', () => {
     const twice = [
       '@@ -1,1 +1,1 @@',
