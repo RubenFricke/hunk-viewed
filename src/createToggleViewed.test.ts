@@ -4,9 +4,8 @@ import type {
 } from 'hunkdiff/extension';
 import { describe, expect, it } from 'vitest';
 
-import createFoldTracker, { type FoldTracker } from './createFoldTracker.ts';
+import createToggleViewed from './createToggleViewed.ts';
 import createViewedStore, { type ViewedStore } from './createViewedStore.ts';
-import toggleViewed from './toggleViewed.ts';
 import fakeDiffFile from '../test/fakeDiffFile.ts';
 
 const APPLY_TO_ALL_MATCHING = 'hunk.view.applyFilePresentationToAllMatching';
@@ -32,9 +31,14 @@ const recordContext = (
   {
     files = [CART, ORDER, USER],
     isApplyEnabled = true,
-  }: { files?: readonly ExtensionDiffFile[]; isApplyEnabled?: boolean } = {},
+    applyThrows = false,
+  }: {
+    files?: readonly ExtensionDiffFile[];
+    isApplyEnabled?: boolean;
+    applyThrows?: boolean;
+  } = {},
 ): {
-  ctx: Parameters<typeof toggleViewed>[0];
+  ctx: Parameters<ReturnType<typeof createToggleViewed>>[0];
   selectedViews: (string | null)[];
   selectedFileIds: string[];
   executedCommands: string[];
@@ -68,6 +72,9 @@ const recordContext = (
         isEnabled: (commandId) =>
           commandId === APPLY_TO_ALL_MATCHING && isApplyEnabled,
         execute: (commandId) => {
+          if (applyThrows) {
+            throw new Error('Hunk is reloading');
+          }
           executedCommands.push(commandId);
           return true;
         },
@@ -85,31 +92,31 @@ const recordContext = (
   };
 };
 
-const createDependencies = (): {
+const createDependencies = ({
+  waitForHunk = () => Promise.resolve(),
+}: { waitForHunk?: () => Promise<void> } = {}): {
   store: ViewedStore;
-  folds: FoldTracker;
   announce: () => void;
-  waitUntil: (check: () => boolean) => Promise<boolean>;
+  waitForHunk: () => Promise<void>;
   announcements: number[];
 } => {
   const store = createViewedStore();
   const announcements: number[] = [];
   return {
     store,
-    folds: createFoldTracker(),
     announce: () => {
       announcements.push(store.viewedFiles().length);
     },
-    waitUntil: (check) => Promise.resolve(check()),
+    waitForHunk,
     announcements,
   };
 };
 
-describe('toggleViewed', () => {
+describe('createToggleViewed', () => {
   it('marks an unviewed file and folds it', async () => {
     const dependencies = createDependencies();
     const { ctx, selectedViews } = recordContext(CART);
-    await toggleViewed(ctx, dependencies);
+    await createToggleViewed(dependencies)(ctx);
 
     expect(dependencies.store.isViewed(CART)).toBe(true);
     expect(selectedViews).toEqual(['viewed']);
@@ -119,7 +126,7 @@ describe('toggleViewed', () => {
     const dependencies = createDependencies();
     dependencies.store.mark(ORDER);
     const { ctx, selectedFileIds } = recordContext(CART);
-    await toggleViewed(ctx, dependencies);
+    await createToggleViewed(dependencies)(ctx);
 
     expect(selectedFileIds).toEqual(['git:2:src/user.ts']);
   });
@@ -128,7 +135,7 @@ describe('toggleViewed', () => {
     const dependencies = createDependencies();
     dependencies.store.mark(ORDER);
     const { ctx, selectedFileIds } = recordContext(USER);
-    await toggleViewed(ctx, dependencies);
+    await createToggleViewed(dependencies)(ctx);
 
     expect(selectedFileIds).toEqual(['git:0:src/cart.ts']);
   });
@@ -139,7 +146,7 @@ describe('toggleViewed', () => {
     dependencies.store.mark(CART);
     dependencies.store.mark(ORDER);
     const { ctx, selectedFileIds, notices } = recordContext(USER);
-    await toggleViewed(ctx, dependencies);
+    await createToggleViewed(dependencies)(ctx);
 
     expect(selectedFileIds).toEqual([]);
     expect(notices).toEqual(['All 3 files viewed']);
@@ -151,7 +158,7 @@ describe('toggleViewed', () => {
     const { ctx, selectedFileIds, notices } = recordContext(CART, {
       files: [CART],
     });
-    await toggleViewed(ctx, dependencies);
+    await createToggleViewed(dependencies)(ctx);
 
     expect(selectedFileIds).toEqual([]);
     expect(notices).toEqual(['No unviewed file is visible']);
@@ -161,71 +168,97 @@ describe('toggleViewed', () => {
     const dependencies = createDependencies();
     dependencies.store.mark(CART);
     const { ctx, selectedViews, selectedFileIds } = recordContext(CART);
-    await toggleViewed(ctx, dependencies);
+    await createToggleViewed(dependencies)(ctx);
 
     expect(dependencies.store.isViewed(CART)).toBe(false);
     expect(selectedViews).toEqual([null]);
     expect(selectedFileIds).toEqual([]);
   });
 
-  it('refolds the viewed files when a reload gave one a new id', async () => {
-    const dependencies = createDependencies();
-    const { store, folds } = dependencies;
-    store.mark(ORDER);
-    folds.folded(ORDER);
-    const moved = { ...ORDER, id: 'git:2:src/order.ts' };
-    store.reconcile([CART, moved, USER]);
-    folds.reconcile(store.viewedFiles());
-    const { ctx, executedCommands } = recordContext(CART, {
-      files: [CART, moved, USER],
-    });
-    await toggleViewed(ctx, dependencies);
-
-    expect(executedCommands).toEqual([APPLY_TO_ALL_MATCHING]);
-    expect(folds.needsRefold()).toBe(false);
-  });
-
-  it('does not wait for Hunk while no fold was lost', async () => {
-    const dependencies = createDependencies();
-    let checks = 0;
-    const { ctx, executedCommands } = recordContext(CART);
-    await toggleViewed(ctx, {
-      ...dependencies,
-      waitUntil: (check) => {
-        checks += 1;
-        return Promise.resolve(check());
+  it('folds the other viewed files once Hunk has drawn the fold', async () => {
+    const seenWhileWaiting: number[] = [];
+    const { ctx, executedCommands, selectedFileIds } = recordContext(CART);
+    const dependencies = createDependencies({
+      waitForHunk: () => {
+        seenWhileWaiting.push(executedCommands.length, selectedFileIds.length);
+        return Promise.resolve();
       },
     });
+    dependencies.store.mark(ORDER);
+    await createToggleViewed(dependencies)(ctx);
 
-    expect(checks).toBe(0);
-    expect(executedCommands).toEqual([]);
+    expect(seenWhileWaiting).toEqual([0, 0]);
+    expect(executedCommands).toEqual([APPLY_TO_ALL_MATCHING]);
+    expect(selectedFileIds).toEqual(['git:2:src/user.ts']);
   });
 
-  it('moves on when Hunk does not enable the refold', async () => {
+  it('jumps on when Hunk has nothing left to fold', async () => {
     const dependencies = createDependencies();
-    const { store, folds } = dependencies;
-    store.mark(ORDER);
-    folds.folded(ORDER);
-    const moved = { ...ORDER, id: 'git:2:src/order.ts' };
-    store.reconcile([CART, moved, USER]);
-    folds.reconcile(store.viewedFiles());
     const { ctx, executedCommands, selectedFileIds } = recordContext(CART, {
-      files: [CART, moved, USER],
       isApplyEnabled: false,
     });
-    await toggleViewed(ctx, dependencies);
+    await createToggleViewed(dependencies)(ctx);
 
     expect(executedCommands).toEqual([]);
-    expect(selectedFileIds).toEqual(['git:2:src/user.ts']);
-    expect(folds.needsRefold()).toBe(false);
+    expect(selectedFileIds).toEqual(['git:1:src/order.ts']);
+  });
+
+  it('does not wait for Hunk when it unmarks', async () => {
+    let waits = 0;
+    const dependencies = createDependencies({
+      waitForHunk: () => {
+        waits += 1;
+        return Promise.resolve();
+      },
+    });
+    dependencies.store.mark(CART);
+    const { ctx } = recordContext(CART);
+    await createToggleViewed(dependencies)(ctx);
+
+    expect(waits).toBe(0);
+  });
+
+  it('ignores a second x while the first one waits for Hunk', async () => {
+    let hunkHasDrawn = (): void => undefined;
+    const dependencies = createDependencies({
+      waitForHunk: () =>
+        new Promise((resolve) => {
+          hunkHasDrawn = resolve;
+        }),
+    });
+    const toggleViewed = createToggleViewed(dependencies);
+    const { ctx, selectedViews, selectedFileIds } = recordContext(CART);
+    const first = toggleViewed(ctx);
+    const second = toggleViewed(ctx);
+    hunkHasDrawn();
+    await Promise.all([first, second]);
+
+    expect(dependencies.store.isViewed(CART)).toBe(true);
+    expect(selectedViews).toEqual(['viewed']);
+    expect(selectedFileIds).toEqual(['git:1:src/order.ts']);
+  });
+
+  it('accepts the next x after the first one failed', async () => {
+    const dependencies = createDependencies();
+    const toggleViewed = createToggleViewed(dependencies);
+    const failing = recordContext(CART, { applyThrows: true });
+    await expect(toggleViewed(failing.ctx)).rejects.toThrow(
+      'Hunk is reloading',
+    );
+    const { ctx, selectedViews } = recordContext(CART);
+    await toggleViewed(ctx);
+
+    expect(dependencies.store.isViewed(CART)).toBe(false);
+    expect(selectedViews).toEqual([null]);
   });
 
   it('announces every mark and unmark', async () => {
     const dependencies = createDependencies();
     dependencies.store.reconcile([CART, ORDER, USER]);
+    const toggleViewed = createToggleViewed(dependencies);
     const { ctx } = recordContext(CART);
-    await toggleViewed(ctx, dependencies);
-    await toggleViewed(ctx, dependencies);
+    await toggleViewed(ctx);
+    await toggleViewed(ctx);
 
     expect(dependencies.announcements).toEqual([1, 0]);
   });
@@ -233,9 +266,10 @@ describe('toggleViewed', () => {
   it('shows the progress after each toggle', async () => {
     const dependencies = createDependencies();
     dependencies.store.reconcile([CART, ORDER, USER]);
+    const toggleViewed = createToggleViewed(dependencies);
     const { ctx, statusItems } = recordContext(CART);
-    await toggleViewed(ctx, dependencies);
-    await toggleViewed(ctx, dependencies);
+    await toggleViewed(ctx);
+    await toggleViewed(ctx);
 
     expect(statusItems.map((item) => item.spans[0]?.text)).toEqual([
       '1 of 3 files viewed',
@@ -246,7 +280,7 @@ describe('toggleViewed', () => {
   it('tells the user when no file is selected', async () => {
     const dependencies = createDependencies();
     const { ctx, selectedViews, notices } = recordContext(null);
-    await toggleViewed(ctx, dependencies);
+    await createToggleViewed(dependencies)(ctx);
 
     expect(notices).toEqual(['Select a file to mark it viewed']);
     expect(selectedViews).toEqual([]);
