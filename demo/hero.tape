@@ -6,7 +6,7 @@ Require hunk
 Set Shell bash
 Set FontSize 16
 Set Width 940
-Set Height 540
+Set Height 620
 Set Padding 12
 Set Framerate 12
 Set TypingSpeed 40ms
@@ -26,14 +26,22 @@ Escape
 Sleep 400ms
 Show
 
+# guide.md and cart.ts: one hunk each, so x folds the file
 Sleep 1500ms
 Type "x"
 Sleep 1600ms
 Type "x"
 Sleep 1600ms
+# order.ts: X folds the whole file at once
+Type "X"
+Sleep 1600ms
+# stock.ts: three hunks, x dims them one by one until the file folds
 Type "x"
-Sleep 2500ms
-Type "k"
-Sleep 900ms
+Sleep 1600ms
 Type "x"
-Sleep 2500ms
+Sleep 1600ms
+Type "x"
+Sleep 1800ms
+# user.ts: the last file
+Type "x"
+Sleep 3000ms

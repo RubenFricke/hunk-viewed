@@ -13,8 +13,9 @@ for tool in vhs ffmpeg hunk git; do
   command -v "$tool" >/dev/null || { echo "$tool is not on PATH." >&2; exit 1; }
 done
 
-# The fixture: five short files, each with a small change, so the whole review
-# fits the recording. Fixed dates keep the recording the same on every run.
+# The fixture: five short files with small changes, one of them with three
+# hunks, so the whole review fits the recording. Fixed dates keep the
+# recording the same on every run.
 rm -rf "$DEMO"
 mkdir -p "$DEMO/config" "$DEMO/state" "$DEMO/repo"
 cd "$DEMO/repo"
@@ -41,7 +42,30 @@ cat > src/user.ts <<'EOF'
 export const greet = (name: string) => `Hi ${name}`;
 EOF
 cat > src/stock.ts <<'EOF'
-export const inStock = (count: number) => count > 0;
+export const inStock = (count: number) =>
+  count > 0;
+
+const sizes = [
+  'xs',
+  's',
+  'm',
+  'l',
+  'xl',
+];
+
+export const isLow = (count: number) =>
+  count < 5;
+
+const colors = [
+  'red',
+  'green',
+  'blue',
+  'black',
+  'white',
+];
+
+export const reorder = (count: number) =>
+  count < 2;
 EOF
 cat > docs/guide.md <<'EOF'
 # Guide
@@ -70,8 +94,30 @@ cat > src/user.ts <<'EOF'
 export const greet = (name: string) => `Hello ${name}`;
 EOF
 cat > src/stock.ts <<'EOF'
-export const inStock = (count: number) => count > 0;
-export const isLow = (count: number) => count < 5;
+export const inStock = (count: number) =>
+  count >= 1;
+
+const sizes = [
+  'xs',
+  's',
+  'm',
+  'l',
+  'xl',
+];
+
+export const isLow = (count: number) =>
+  count < 10;
+
+const colors = [
+  'red',
+  'green',
+  'blue',
+  'black',
+  'white',
+];
+
+export const reorder = (count: number) =>
+  count < 3;
 EOF
 cat > docs/guide.md <<'EOF'
 # Guide

@@ -1,54 +1,53 @@
 import type {
   ExtensionCommand,
-  ExtensionCommandControls,
   ExtensionContext,
-  ExtensionFileViewControls,
+  ExtensionLineHighlightControls,
   ExtensionReviewNavigation,
   ExtensionReviewSelection,
   ExtensionStatusLineControls,
 } from 'hunkdiff/extension';
 
-import { VIEWED_VIEW_ID } from './createViewedFileView.ts';
-import type { ViewedStore } from './createViewedStore.ts';
+import { VIEWED_HUNKS_HIGHLIGHTER_ID } from './createViewedHighlighter.ts';
+import type { ViewedFile, ViewedStore } from './createViewedStore.ts';
+import foldViewedFile, { type FoldContext } from './foldViewedFile.ts';
 import showProgress from './showProgress.ts';
 import findNextUnviewed from './utils/findNextUnviewed.ts';
 import yieldToHunk from './utils/yieldToHunk.ts';
 
-const APPLY_TO_ALL_MATCHING = 'hunk.view.applyFilePresentationToAllMatching';
-
 /** Users remap the key by this id, so the id must not change. */
-export const TOGGLE_VIEWED_COMMAND = {
-  id: 'toggleViewed',
-  title: 'Toggle viewed on the selected file',
-  key: 'x',
+export const TOGGLE_FILE_COMMAND = {
+  id: 'toggleFile',
+  title: 'Toggle viewed on the whole file',
+  key: 'X',
 } as const satisfies ExtensionCommand;
 
-interface ToggleViewedContext extends Pick<ExtensionContext, 'notify'> {
+export interface ToggleFileContext
+  extends FoldContext, Pick<ExtensionContext, 'notify'> {
   readonly selection: Pick<ExtensionReviewSelection, 'file' | 'files'>;
-  readonly fileViews: Pick<ExtensionFileViewControls, 'select'>;
   readonly navigation: Pick<ExtensionReviewNavigation, 'selectFile'>;
-  readonly statusLine: ExtensionStatusLineControls;
-  readonly commands: Pick<ExtensionCommandControls, 'isEnabled' | 'execute'>;
+  readonly highlights: Pick<ExtensionLineHighlightControls, 'refresh'>;
 }
 
-interface ToggleViewedDependencies {
+export interface ToggleFileDependencies {
   readonly store: ViewedStore;
   readonly announce: () => void;
+  /** Shows the hunk count of a file on the status line, or clears it. */
+  readonly showHunks: (
+    statusLine: ExtensionStatusLineControls,
+    file: ViewedFile | null,
+  ) => void;
   readonly waitForHunk?: () => Promise<void>;
 }
 
-type ToggleViewed = (ctx: ToggleViewedContext) => Promise<void>;
+export type ToggleFile = (ctx: ToggleFileContext) => Promise<void>;
 
-/**
- * The store is the only record of what is viewed. Every mark folds the selected
- * file and then has Hunk fold every other viewed file as well, which brings
- * back the folds that a reload dropped by giving files new ids.
- */
-const createToggleViewed = ({
+/** Marks the whole file at once; unmarking also forgets its hunk marks. */
+const createToggleFile = ({
   store,
   announce,
+  showHunks,
   waitForHunk = yieldToHunk,
-}: ToggleViewedDependencies): ToggleViewed => {
+}: ToggleFileDependencies): ToggleFile => {
   let isMarking = false;
 
   return async (ctx) => {
@@ -67,28 +66,23 @@ const createToggleViewed = ({
 
     if (store.isViewed(file)) {
       store.unmark(file);
+      store.clearHunks(file);
       ctx.fileViews.select(null);
+      ctx.highlights.refresh(VIEWED_HUNKS_HIGHLIGHTER_ID, { fileId: file.id });
       showProgress(ctx.statusLine, store.progress());
+      showHunks(ctx.statusLine, file);
       announce();
       return;
     }
 
     isMarking = true;
     try {
-      store.mark(file);
-      ctx.fileViews.select(VIEWED_VIEW_ID);
-      const progress = store.progress();
-      showProgress(ctx.statusLine, progress);
-      announce();
-
-      /**
-       * Hunk enables the command once it has drawn the selected file in the
-       * folded view and some other file the view matches is not folded.
-       */
-      await waitForHunk();
-      if (ctx.commands.isEnabled(APPLY_TO_ALL_MATCHING)) {
-        ctx.commands.execute(APPLY_TO_ALL_MATCHING);
-      }
+      const progress = await foldViewedFile(ctx, file, {
+        store,
+        announce,
+        waitForHunk,
+      });
+      showHunks(ctx.statusLine, file);
 
       const next = findNextUnviewed({
         files: ctx.selection.files,
@@ -110,4 +104,4 @@ const createToggleViewed = ({
   };
 };
 
-export default createToggleViewed;
+export default createToggleFile;
