@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # Records the README demo: builds a fixture repository with fixed dates, runs
-# demo/hero.tape against it with an isolated Hunk config, and checks the GIF.
+# demo/hero.tape against it with an isolated Hunk config, checks the GIF, and
+# puts it in demo/hero.gif.
 # Needs vhs (which brings ttyd and ffmpeg) and hunk on PATH.
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 DEMO=${HUNK_VIEWED_DEMO:-/tmp/hunk-viewed-demo}
 OUT="$ROOT/demo/out/hero.gif"
+FINAL="$ROOT/demo/hero.gif"
 MAX_BYTES=$((1500 * 1024))
 
 for tool in vhs ffmpeg hunk git; do
@@ -145,4 +147,7 @@ if cmp -s "$frames/first.png" "$frames/last.png"; then
   exit 1
 fi
 rm -rf "$frames"
-echo "Recorded $OUT: $bytes bytes, on Hunk $(hunk --version)."
+
+# Only a recording that passed the checks replaces the one in the repository.
+mv "$OUT" "$FINAL"
+echo "Recorded $FINAL: $bytes bytes, on Hunk $(hunk --version)."
