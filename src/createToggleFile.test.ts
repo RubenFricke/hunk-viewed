@@ -33,7 +33,11 @@ const FILES = [CART, ORDER, USER];
 
 const recordContext = (
   file: typeof CART | null,
-  options: { files?: readonly (typeof CART)[]; isApplyEnabled?: boolean } = {},
+  options: {
+    files?: readonly (typeof CART)[];
+    isApplyEnabled?: boolean;
+    viewIsActive?: boolean;
+  } = {},
 ) => recordCommandContext(file, { files: FILES, ...options });
 
 const createDependencies = ({
@@ -66,11 +70,25 @@ const createDependencies = ({
 describe('createToggleFile', () => {
   it('marks an unviewed file and folds it', async () => {
     const dependencies = createDependencies();
-    const { ctx, selectedViews } = recordContext(CART);
+    const { ctx, selectedViews, refreshedViews } = recordContext(CART);
     await createToggleFile(dependencies)(ctx);
 
     expect(dependencies.store.isViewed(CART)).toBe(true);
     expect(selectedViews).toEqual(['viewed']);
+    expect(refreshedViews).toEqual([]);
+  });
+
+  it('lays the file out again when Hunk still holds the view', async () => {
+    /** A reload dropped the mark; Hunk kept the view with nothing to show. */
+    const dependencies = createDependencies();
+    const { ctx, selectedViews, refreshedViews, selectedFileIds } =
+      recordContext(CART, { viewIsActive: true });
+    await createToggleFile(dependencies)(ctx);
+
+    expect(dependencies.store.isViewed(CART)).toBe(true);
+    expect(selectedViews).toEqual([]);
+    expect(refreshedViews).toEqual(['viewed:git:0:src/cart.ts']);
+    expect(selectedFileIds).toEqual(['git:1:src/order.ts']);
   });
 
   it('jumps to the next unviewed file after marking', async () => {

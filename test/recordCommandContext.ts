@@ -11,10 +11,13 @@ interface RecordOptions {
   readonly hunkIndex?: number | null;
   readonly isApplyEnabled?: boolean;
   readonly applyThrows?: boolean;
+  /** Whether Hunk already shows the selected file in the viewed view. */
+  readonly viewIsActive?: boolean;
 }
 
 interface RecordedCommandContext {
   readonly selectedViews: (string | null)[];
+  readonly refreshedViews: string[];
   readonly selectedFileIds: string[];
   readonly selectedHunks: string[];
   readonly executedCommands: string[];
@@ -27,7 +30,11 @@ interface RecordedCommandContext {
       readonly files: readonly ExtensionDiffFile[];
       readonly hunkIndex: number | null;
     };
-    readonly fileViews: { select: (viewId: string | null) => void };
+    readonly fileViews: {
+      select: (viewId: string | null) => void;
+      refresh: (viewId: string, options?: { fileId?: string }) => void;
+      isActive: (viewId: string) => boolean;
+    };
     readonly navigation: {
       selectFile: (fileId: string) => void;
       selectHunk: (fileId: string, hunkIndex: number) => void;
@@ -52,9 +59,11 @@ const recordCommandContext = (
     hunkIndex = null,
     isApplyEnabled = true,
     applyThrows = false,
+    viewIsActive = false,
   }: RecordOptions,
 ): RecordedCommandContext => {
   const selectedViews: (string | null)[] = [];
+  const refreshedViews: string[] = [];
   const selectedFileIds: string[] = [];
   const selectedHunks: string[] = [];
   const executedCommands: string[] = [];
@@ -63,6 +72,7 @@ const recordCommandContext = (
   const notices: string[] = [];
   return {
     selectedViews,
+    refreshedViews,
     selectedFileIds,
     selectedHunks,
     executedCommands,
@@ -75,6 +85,10 @@ const recordCommandContext = (
         select: (viewId) => {
           selectedViews.push(viewId);
         },
+        refresh: (viewId, options) => {
+          refreshedViews.push(`${viewId}:${options?.fileId ?? '*'}`);
+        },
+        isActive: () => viewIsActive,
       },
       navigation: {
         selectFile: (fileId) => {
