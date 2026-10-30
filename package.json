@@ -1,6 +1,6 @@
 {
   "name": "hunk-viewed",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "GitHub-style Viewed marks for Hunk: press x to mark a hunk viewed, X for the whole file, fold what you have seen, see your progress and move on to what is left",
   "keywords": [
