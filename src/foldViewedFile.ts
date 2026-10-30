@@ -12,7 +12,10 @@ import showProgress from './showProgress.ts';
 const APPLY_TO_ALL_MATCHING = 'hunk.view.applyFilePresentationToAllMatching';
 
 export interface FoldContext {
-  readonly fileViews: Pick<ExtensionFileViewControls, 'select'>;
+  readonly fileViews: Pick<
+    ExtensionFileViewControls,
+    'select' | 'refresh' | 'isActive'
+  >;
   readonly statusLine: ExtensionStatusLineControls;
   readonly commands: Pick<ExtensionCommandControls, 'isEnabled' | 'execute'>;
 }
@@ -34,7 +37,16 @@ const foldViewedFile = async (
   { store, announce, waitForHunk }: FoldDependencies,
 ): Promise<ViewedProgress> => {
   store.mark(file);
-  ctx.fileViews.select(VIEWED_VIEW_ID);
+  /**
+   * After a reload dropped the mark, Hunk still holds the view for this file
+   * with nothing to show, so selecting it again would change nothing; then it
+   * has to lay the file out again. Otherwise selecting the view is enough.
+   */
+  if (ctx.fileViews.isActive(VIEWED_VIEW_ID)) {
+    ctx.fileViews.refresh(VIEWED_VIEW_ID, { fileId: file.id });
+  } else {
+    ctx.fileViews.select(VIEWED_VIEW_ID);
+  }
   const progress = store.progress();
   showProgress(ctx.statusLine, progress);
   announce();
