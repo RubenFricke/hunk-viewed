@@ -2,7 +2,7 @@
 
 GitHub-style **Viewed** marks for [Hunk](https://hunk.dev): press `x` to mark a hunk viewed, `X` for the whole file, fold what you have seen, see your progress and move on to what is left.
 
-<img alt="A Hunk review of five files. x dims the selected hunk and moves to the next one; when the last hunk of a file is viewed the file folds to its header and one ✓ Viewed row. X folds a whole file at once. The status line counts the hunks of the current file and the files of the review." src="https://github.com/RubenFricke/hunk-viewed/raw/assets/demo/hero.gif" width="940">
+<img alt="A Hunk review of five files. x dims the selected hunk and moves to the next one; when the last hunk of a file is viewed the file folds to its header and one ✓ Viewed row. X folds a whole file at once. The status line counts the hunks of the current file and the files of the review." src="demo/hero.gif" width="940">
 
 ## Install
 
