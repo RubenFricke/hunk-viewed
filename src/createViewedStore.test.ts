@@ -153,6 +153,19 @@ describe('createViewedStore', () => {
     expect(store.hunksOf(CART)).not.toBe(hunks);
   });
 
+  it('drops cached hunks when the review becomes empty', () => {
+    const store = createViewedStore();
+    store.reconcile([CART, ORDER]);
+    const cartHunks = store.hunksOf(CART);
+    const orderHunks = store.hunksOf(ORDER);
+
+    store.reconcile([]);
+    store.reconcile([CART, ORDER]);
+
+    expect(store.hunksOf(CART)).not.toBe(cartHunks);
+    expect(store.hunksOf(ORDER)).not.toBe(orderHunks);
+  });
+
   it('marks and unmarks one hunk', () => {
     const store = createViewedStore();
     store.markHunk(TWO_HUNKS, 1);
