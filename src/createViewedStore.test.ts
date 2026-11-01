@@ -166,6 +166,17 @@ describe('createViewedStore', () => {
     expect(store.hunksOf(ORDER)).not.toBe(orderHunks);
   });
 
+  it('keeps cached hunks for files still in the review', () => {
+    const store = createViewedStore();
+    store.reconcile([CART, ORDER]);
+    store.hunksOf(CART);
+    const hunks = store.hunksOf(ORDER);
+
+    store.reconcile([ORDER]);
+
+    expect(store.hunksOf(ORDER)).toBe(hunks);
+  });
+
   it('marks and unmarks one hunk', () => {
     const store = createViewedStore();
     store.markHunk(TWO_HUNKS, 1);
