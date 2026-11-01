@@ -142,6 +142,17 @@ describe('createViewedStore', () => {
     expect(store.hunksOf({ ...TWO_HUNKS, patch: CART.patch })).toHaveLength(1);
   });
 
+  it('drops cached hunks when a file leaves the review', () => {
+    const store = createViewedStore();
+    store.reconcile([CART, ORDER]);
+    const hunks = store.hunksOf(CART);
+
+    store.reconcile([ORDER]);
+    store.reconcile([CART, ORDER]);
+
+    expect(store.hunksOf(CART)).not.toBe(hunks);
+  });
+
   it('marks and unmarks one hunk', () => {
     const store = createViewedStore();
     store.markHunk(TWO_HUNKS, 1);
