@@ -117,6 +117,11 @@ const createViewedStore = (): ViewedStore => {
           }
         }
       }
+      for (const path of parsedByPath.keys()) {
+        if (!filesByPath.has(path)) {
+          parsedByPath.delete(path);
+        }
+      }
       return { changed, removed };
     },
     viewedFiles: () => files.filter(isViewed),

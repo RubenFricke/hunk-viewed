@@ -142,6 +142,41 @@ describe('createViewedStore', () => {
     expect(store.hunksOf({ ...TWO_HUNKS, patch: CART.patch })).toHaveLength(1);
   });
 
+  it('drops cached hunks when a file leaves the review', () => {
+    const store = createViewedStore();
+    store.reconcile([CART, ORDER]);
+    const hunks = store.hunksOf(CART);
+
+    store.reconcile([ORDER]);
+    store.reconcile([CART, ORDER]);
+
+    expect(store.hunksOf(CART)).not.toBe(hunks);
+  });
+
+  it('drops cached hunks when the review becomes empty', () => {
+    const store = createViewedStore();
+    store.reconcile([CART, ORDER]);
+    const cartHunks = store.hunksOf(CART);
+    const orderHunks = store.hunksOf(ORDER);
+
+    store.reconcile([]);
+    store.reconcile([CART, ORDER]);
+
+    expect(store.hunksOf(CART)).not.toBe(cartHunks);
+    expect(store.hunksOf(ORDER)).not.toBe(orderHunks);
+  });
+
+  it('keeps cached hunks for files still in the review', () => {
+    const store = createViewedStore();
+    store.reconcile([CART, ORDER]);
+    store.hunksOf(CART);
+    const hunks = store.hunksOf(ORDER);
+
+    store.reconcile([ORDER]);
+
+    expect(store.hunksOf(ORDER)).toBe(hunks);
+  });
+
   it('marks and unmarks one hunk', () => {
     const store = createViewedStore();
     store.markHunk(TWO_HUNKS, 1);
