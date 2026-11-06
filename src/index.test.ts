@@ -60,7 +60,7 @@ const loadExtension = (config: Record<string, unknown> = {}) => {
     | 'events'
   >;
   // The factory only uses the capabilities implemented by this host fixture.
-  viewedExtension(api as HunkExtensionAPI);
+  viewedExtension(api as unknown as HunkExtensionAPI);
 
   const emit = async <Name extends ExtensionEventName>(
     name: Name,
@@ -71,16 +71,22 @@ const loadExtension = (config: Record<string, unknown> = {}) => {
       cwd: '/fixture',
       statusLine,
       notify: () => undefined,
-    } as ExtensionEventContext);
+    } as unknown as ExtensionEventContext);
   };
   const load = async (
     files: readonly ExtensionDiffFile[],
     reload = false,
   ): Promise<void> => {
+    const changeset = {
+      id: 'fixture',
+      sourceLabel: 'fixture',
+      title: 'Fixture review',
+      files: [...files],
+    };
     if (reload) {
-      await emit('session_reload', { changeset: { files }, reason: 'manual' });
+      await emit('session_reload', { changeset, reason: 'manual' });
     } else {
-      await emit('changeset_loaded', { changeset: { files } });
+      await emit('changeset_loaded', { changeset });
     }
   };
   const select = (fileId: string | null): Promise<void> =>
