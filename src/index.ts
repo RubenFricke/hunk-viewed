@@ -13,6 +13,7 @@ import createViewedHighlighter from './createViewedHighlighter.ts';
 import createViewedStore, { type ViewedFile } from './createViewedStore.ts';
 import showHunkProgress from './showHunkProgress.ts';
 import showProgress from './showProgress.ts';
+import showViewedStatus from './showViewedStatus.ts';
 import describeChangedFiles from './utils/describeChangedFiles.ts';
 import readHunkProgressSetting from './utils/readHunkProgressSetting.ts';
 
@@ -21,14 +22,16 @@ const viewedExtension = (hunk: HunkExtensionAPI): void => {
   const announce = (): void => {
     announceViewedChange(hunk.events, store);
   };
-  const showHunks = readHunkProgressSetting(hunk.config)
-    ? (
-        statusLine: ExtensionStatusLineControls,
-        file: ViewedFile | null,
-      ): void => {
-        showHunkProgress(statusLine, file ? store.hunkProgress(file) : null);
-      }
-    : (): void => undefined;
+  const hunkProgressEnabled = readHunkProgressSetting(hunk.config);
+  const showHunks = (
+    statusLine: ExtensionStatusLineControls,
+    file: ViewedFile | null,
+  ): void => {
+    showViewedStatus(statusLine, file !== null && store.isViewed(file));
+    if (hunkProgressEnabled) {
+      showHunkProgress(statusLine, file ? store.hunkProgress(file) : null);
+    }
+  };
 
   hunk.registerFileView(createViewedFileView(store));
   hunk.registerLineHighlighter(createViewedHighlighter(store));
