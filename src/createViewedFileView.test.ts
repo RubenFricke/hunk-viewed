@@ -28,21 +28,23 @@ const layoutInput = (
   readable: readonly ExtensionFileSide[],
 ): { input: ExtensionFileViewInput; readSides: ExtensionFileSide[] } => {
   const readSides: ExtensionFileSide[] = [];
-  return {
-    readSides,
-    input: {
-      file,
-      width: 120,
-      signal: new AbortController().signal,
-      changes: [],
-      readDocument: (side) => {
-        readSides.push(side);
-        return Promise.resolve(
-          readable.includes(side) ? 'line\n'.repeat(40) : null,
-        );
-      },
+  const input = {
+    file,
+    width: 120,
+    signal: new AbortController().signal,
+    changes: [],
+    readDocument: (side: ExtensionFileSide) => {
+      readSides.push(side);
+      return Promise.resolve(
+        readable.includes(side) ? 'line\n'.repeat(40) : null,
+      );
+    },
+    readBytes: (side: ExtensionFileSide) => {
+      readSides.push(side);
+      return Promise.resolve(null);
     },
   };
+  return { input, readSides };
 };
 
 describe('createViewedFileView', () => {
